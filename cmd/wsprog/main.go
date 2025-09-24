@@ -14,15 +14,16 @@ import (
 
 const (
 	BAUD = 115200
+
+	CHUNK_SIZE = 1024
 )
 
 const (
-	X_START128  = uint8(0x10)
-	X_START1024 = uint8(0x20)
-	X_END       = uint8(0x30)
-	X_ACK       = uint8(0x40)
-	X_NACK      = uint8(0x50)
-	X_NCRC      = uint8(0x60)
+	X_START = uint8(0x10)
+	X_END   = uint8(0x20)
+	X_ACK   = uint8(0x30)
+	X_NACK  = uint8(0x40)
+	X_NCRC  = uint8(0x50)
 )
 
 type CrcError struct {
@@ -44,7 +45,7 @@ func crc16(crc0 uint16, data []byte) uint16 {
 }
 
 func programChunk(port serial.Port, chunk []byte) error {
-	if len(chunk) != 128 && len(chunk) != 1024 {
+	if len(chunk) != CHUNK_SIZE {
 		return fmt.Errorf("invalid chunk size %d", len(chunk))
 	}
 
@@ -53,12 +54,7 @@ func programChunk(port serial.Port, chunk []byte) error {
 	binary.LittleEndian.PutUint16(crc_bytes, crc)
 
 	b := make([]byte, 1)
-
-	if len(chunk) == 1024 {
-		b[0] = X_START1024
-	} else {
-		b[0] = X_START128
-	}
+	b[0] = X_START
 
 	_, err := port.Write(b)
 
@@ -162,15 +158,7 @@ func program(port_name string, firmware_file string) error {
 	reader := bufio.NewReader(fw)
 
 	for bytesWritten < fwFileSize {
-		remainedBytes := fwFileSize - bytesWritten
-
-		var chunk []byte
-
-		if remainedBytes <= 128 {
-			chunk = make([]byte, 128)
-		} else {
-			chunk = make([]byte, 1024)
-		}
+		var chunk []byte = make([]byte, CHUNK_SIZE)
 
 		bytesRead, err := reader.Read(chunk)
 
