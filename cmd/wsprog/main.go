@@ -157,6 +157,8 @@ func program(port_name string, firmware_file string) error {
 
 	reader := bufio.NewReader(fw)
 
+	fmt.Printf("...\r")
+
 	for bytesWritten < fwFileSize {
 		var chunk []byte = make([]byte, CHUNK_SIZE)
 
@@ -166,8 +168,6 @@ func program(port_name string, firmware_file string) error {
 			return err
 		}
 
-		fmt.Printf("Chunk %d bytes (%d)\n", len(chunk), bytesRead)
-
 		err = programChunk(port, chunk)
 
 		if err != nil {
@@ -175,7 +175,11 @@ func program(port_name string, firmware_file string) error {
 		}
 
 		bytesWritten += int64(bytesRead)
+
+		fmt.Printf("[%d%%] %d bytes written\r", int(bytesWritten*100/fwFileSize), bytesWritten)
 	}
+
+	fmt.Println()
 
 	// Send END byte
 	end_byte := make([]byte, 1)
