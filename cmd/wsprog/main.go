@@ -190,7 +190,16 @@ func program(port_name string, firmware_file string) error {
 		return err
 	}
 
-	fmt.Println("Done.")
+	_, err = port.Read(end_byte)
+	if err != nil {
+		return nil
+	}
+
+	if end_byte[0] != X_ACK {
+		return fmt.Errorf("programming failed")
+	}
+
+	fmt.Println("OK")
 
 	return nil
 }
